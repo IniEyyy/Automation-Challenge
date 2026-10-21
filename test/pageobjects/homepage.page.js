@@ -121,11 +121,11 @@ class HomepagePage extends BasePage {
   }
 
   async areCategoryShortcutsDisplayed() {
-    return (await this.countAny(this.categoryItems)) > 0;
+    return (await this.waitForAny(this.categoryItems)) > 0;
   }
 
   async isPropertyFeedDisplayed() {
-    return (await this.countAny(this.propertyCards)) > 0;
+    return (await this.waitForAny(this.propertyCards)) > 0;
   }
 
   async isBottomNavDisplayed() {
@@ -137,7 +137,7 @@ class HomepagePage extends BasePage {
   }
 
   async getPropertyCardCount() {
-    return this.countAny(this.propertyCards);
+    return this.countFirst(this.propertyCards);
   }
 
   async goToHomeTab() {

@@ -69,6 +69,31 @@ class BasePage {
     return total;
   }
 
+  async countFirst(selectorList) {
+    const candidates = Array.isArray(selectorList) ? selectorList : [selectorList];
+    for (const selector of candidates) {
+      const count = await this.countElements(selector);
+      if (count > 0) {
+        return count;
+      }
+    }
+    return 0;
+  }
+
+  async waitForAny(selectorList, timeout = 10000, interval = 500) {
+    const deadline = Date.now() + timeout;
+
+    do {
+      const count = await this.countFirst(selectorList);
+      if (count > 0) {
+        return count;
+      }
+      await browser.pause(interval);
+    } while (Date.now() < deadline);
+
+    return 0;
+  }
+
   async swipeUp(duration = 800) {
     const { width, height } = await browser.getWindowSize();
     const startX = Math.round(width / 2);
