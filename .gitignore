@@ -1,0 +1,17 @@
+node_modules/
+.env
+*.log
+npm-debug.log*
+reports/*
+!reports/.gitkeep
+
+# App binaries and local artifacts
+apps/*.apk
+apps/*.ipa
+apps/*.app
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

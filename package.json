@@ -1,0 +1,24 @@
+{
+  "name": "automation-challenge",
+  "version": "1.0.0",
+  "description": "Mobile automation for the 99 app homepage using Appium + WebdriverIO + Cucumber (Gherkin)",
+  "private": true,
+  "scripts": {
+    "test": "wdio run wdio.conf.js",
+    "test:smoke": "wdio run wdio.conf.js --cucumberOpts.tagExpression=@smoke",
+    "test:regression": "wdio run wdio.conf.js --cucumberOpts.tagExpression=@regression",
+    "scan:locators": "node scripts/scan-locators.js",
+    "setup:driver": "appium driver install uiautomator2"
+  },
+  "devDependencies": {
+    "@wdio/appium-service": "^9.32.0",
+    "@wdio/cli": "^9.32.0",
+    "@wdio/cucumber-framework": "^9.32.0",
+    "@wdio/local-runner": "^9.32.0",
+    "@wdio/spec-reporter": "^9.32.0",
+    "appium": "^3.8.0",
+    "appium-uiautomator2-driver": "^8.7.0",
+    "dotenv": "^16.4.5",
+    "webdriverio": "^9.32.0"
+  }
+}
