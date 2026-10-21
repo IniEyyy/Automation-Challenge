@@ -19,6 +19,18 @@ When('I tap the property search bar', async () => {
   await homepage.tapSearchBar();
 });
 
+When('I type {string} in the search input', async (text) => {
+  await homepage.typeSearchQuery(text);
+});
+
+When('I tap the filter button', async () => {
+  await homepage.tapFilter();
+});
+
+When('I close the filter options', async () => {
+  await homepage.closeFilterModal();
+});
+
 When('I scroll the homepage feed down', async () => {
   await homepage.scrollFeed();
 });
@@ -53,6 +65,24 @@ Then('the bottom navigation should remain visible', async () => {
 
 Then('the search input should be displayed', async () => {
   assert.ok(await homepage.isSearchInputDisplayed(), 'Search input should be displayed after tapping the search bar');
+});
+
+Then('search suggestions should be displayed for {string}', async (text) => {
+  assert.ok(
+    await homepage.areSearchSuggestionsDisplayed(text),
+    `Search suggestions for "${text}" should be displayed`
+  );
+});
+
+Then('the filter options should be displayed', async () => {
+  assert.ok(await homepage.isFilterModalDisplayed(), 'Filter options should be displayed after tapping the Filter button');
+});
+
+Then('the {string} tab screen should be displayed', async (tab) => {
+  assert.ok(
+    await homepage.isTabDestinationDisplayed(tab),
+    `The "${tab}" tab screen should be displayed`
+  );
 });
 
 Then('the profile screen should be displayed', async () => {

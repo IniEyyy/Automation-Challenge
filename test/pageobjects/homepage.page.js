@@ -14,7 +14,7 @@ class HomepagePage extends BasePage {
     return [
       '~Lokasi, area, project',
       'android=new UiSelector().descriptionContains("Lokasi, area, project")',
-      'android=new UiSelector().descriptionContains("Lokasi")'
+      'android=new UiSelector().descriptionStartsWith("Lokasi, area")'
     ];
   }
 
@@ -53,18 +53,22 @@ class HomepagePage extends BasePage {
   }
 
   get bottomNav() {
+    return this.bottomNavCari;
+  }
+
+  get bottomNavCari() {
     return [
+      'android=new UiSelector().descriptionContains("Tab 1 of 5")',
+      '~Cari\nTab 1 of 5',
       'android=new UiSelector().descriptionStartsWith("Cari")',
       '~Cari'
     ];
   }
 
-  get bottomNavCari() {
-    return ['android=new UiSelector().descriptionStartsWith("Cari")', '~Cari'];
-  }
-
   get bottomNavHunianBaru() {
     return [
+      'android=new UiSelector().descriptionContains("Tab 2 of 5")',
+      '~Hunian Baru\nTab 2 of 5',
       'android=new UiSelector().descriptionStartsWith("Hunian Baru")',
       '~Hunian Baru'
     ];
@@ -72,6 +76,8 @@ class HomepagePage extends BasePage {
 
   get bottomNavIklanSaya() {
     return [
+      'android=new UiSelector().descriptionContains("Tab 3 of 5")',
+      '~Iklan Saya\nTab 3 of 5',
       'android=new UiSelector().descriptionStartsWith("Iklan Saya")',
       '~Iklan Saya'
     ];
@@ -79,6 +85,8 @@ class HomepagePage extends BasePage {
 
   get bottomNavBuatIklan() {
     return [
+      'android=new UiSelector().descriptionContains("Tab 4 of 5")',
+      '~Buat Iklan\nTab 4 of 5',
       'android=new UiSelector().descriptionStartsWith("Buat Iklan")',
       '~Buat Iklan'
     ];
@@ -86,8 +94,34 @@ class HomepagePage extends BasePage {
 
   get bottomNavAkunSaya() {
     return [
+      'android=new UiSelector().descriptionContains("Tab 5 of 5")',
+      '~Akun Saya\nTab 5 of 5',
       'android=new UiSelector().descriptionStartsWith("Akun Saya")',
       '~Akun Saya'
+    ];
+  }
+
+  get filterModal() {
+    return [
+      '~Terapkan',
+      'android=new UiSelector().descriptionContains("Terapkan")',
+      '~Tipe Iklan',
+      'android=new UiSelector().descriptionContains("Tipe Iklan")'
+    ];
+  }
+
+  get hunianBaruScreen() {
+    return [
+      '~Properti Pilihan 99.co',
+      'android=new UiSelector().descriptionContains("Properti Pilihan 99.co")',
+      'android=new UiSelector().descriptionContains("Cari Lokasi, area, atau Nama Proyek")'
+    ];
+  }
+
+  get searchSuggestions() {
+    return [
+      '~Lokasi Terkait',
+      'android=new UiSelector().descriptionContains("Lokasi Terkait")'
     ];
   }
 
@@ -97,6 +131,10 @@ class HomepagePage extends BasePage {
       'android=new UiSelector().descriptionContains("Login / Daftar")',
       'android=new UiSelector().descriptionContains("silahkan Login")'
     ];
+  }
+
+  get loginPrompt() {
+    return this.profileScreen;
   }
 
   async waitForHomepage(timeout = 20000) {
@@ -136,34 +174,56 @@ class HomepagePage extends BasePage {
     return this.isDisplayed(this.profileScreen);
   }
 
+  async isFilterModalDisplayed() {
+    return this.isDisplayed(this.filterModal, 10000);
+  }
+
+  async isTabDestinationDisplayed(tab) {
+    const normalized = String(tab).trim().toLowerCase();
+
+    if (normalized === 'cari') {
+      return this.isSearchBarDisplayed();
+    }
+    if (normalized === 'hunian baru') {
+      return (await this.waitForAny(this.hunianBaruScreen, 15000)) > 0;
+    }
+    if (['iklan saya', 'buat iklan', 'akun saya', 'profile'].includes(normalized)) {
+      return (await this.waitForAny(this.loginPrompt, 15000)) > 0;
+    }
+
+    throw new Error(`Unknown bottom navigation tab: "${tab}"`);
+  }
+
   async getPropertyCardCount() {
     return this.countFirst(this.propertyCards);
   }
 
   async goToHomeTab() {
     // With noReset enabled the app can resume on the last opened tab or even
-    // on a sub-screen (e.g. search). First dismiss any screen that exposes a
-    // Back button, then select the "Cari" (home) tab.
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const back = await this.findElement(
-        ['~Back', 'android=new UiSelector().description("Back")'],
-        1500
-      );
-      if (!back) {
-        break;
-      }
-      await back.click();
-      await browser.pause(1000);
-    }
-
-    try {
-      const tab = await this.findElement(this.bottomNavCari, 5000);
+    // on a full-screen sub-screen (search, filter, login prompt). Only use the
+    // hardware back button when the bottom navigation is not reachable, so we
+    // never risk closing the app from a tab screen.
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const tab = await this.findElement(this.bottomNavCari, 1200);
       if (tab) {
-        await tab.click();
-        await browser.pause(1000);
+        try {
+          await tab.click();
+        } catch (error) {
+          // The tab can be detached while the screen animates; retry.
+        }
+
+        if (await this.isDisplayed(this.searchBar, 3000)) {
+          return;
+        }
+        continue;
       }
-    } catch (error) {
-      // Bottom nav not available yet; the caller will wait for the homepage.
+
+      try {
+        await browser.back();
+      } catch (error) {
+        // No back action available; let the caller surface the timeout.
+      }
+      await browser.pause(800);
     }
   }
 
@@ -185,8 +245,47 @@ class HomepagePage extends BasePage {
     await this.tap(this.searchBar);
   }
 
+  async typeSearchQuery(text) {
+    const input = await this.waitForDisplayed(this.searchInput, 10000);
+    await input.click();
+    await input.setValue(text);
+    await browser.pause(1200);
+
+    try {
+      // Submit the query so the app resolves locations instead of only
+      // showing the in-progress text.
+      await browser.pressKeyCode(66);
+    } catch (error) {
+      // Suggestions can still appear from the input event alone.
+    }
+
+    await browser.pause(2500);
+  }
+
+  async areSearchSuggestionsDisplayed(text) {
+    const suggestions = await this.waitForAny(this.searchSuggestions, 15000);
+    if (suggestions === 0) {
+      return false;
+    }
+
+    const input = await this.findElement(this.searchInput, 2000);
+    if (!input) {
+      return false;
+    }
+
+    const value = await input
+      .getValue()
+      .catch(() => input.getText().catch(() => ''));
+    return String(value).toLowerCase().includes(String(text).toLowerCase());
+  }
+
   async tapFilter() {
     await this.tap(this.filterButton);
+  }
+
+  async closeFilterModal() {
+    await browser.back();
+    await browser.pause(800);
   }
 
   async tapBottomNav(tab) {
